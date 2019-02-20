@@ -9,7 +9,6 @@
 @time:2019-02-12 16:14:48
 """
 import datetime
-import os
 import pickle
 import random
 import re
@@ -391,49 +390,18 @@ def get_batches(Xs, ys, batch_size):
 """训练网络"""
 losses = {'train': [], 'test': []}
 with tf.Session(graph=train_graph) as sess:
-    # 搜集数据给tensorBoard用
-    # Keep track of gradient values and sparsity
-    grad_summaries = []
-    for g, v in gradients:
-        if g is not None:
-            grad_hist_summary = tf.summary.histogram("{}/grad/hist".format(v.name.replace(':', '_')), g)
-            sparsity_summary = tf.summary.scalar("{}/grad/sparsity".format(v.name.replace(':', '_')),
-                                                 tf.nn.zero_fraction(g))
-            grad_summaries.append(grad_hist_summary)
-            grad_summaries.append(sparsity_summary)
-    grad_summaries_merged = tf.summary.merge(grad_summaries)
-
-    # Output directory for models and summaries
     timestamp = str(int(time.time()))
-    out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
-    print("Writing to {}\n".format(out_dir))
-
-    # Summaries for loss and accuracy
-    loss_summary = tf.summary.scalar("loss", loss)
-
-    # Train Summaries
-    train_summary_op = tf.summary.merge([loss_summary, grad_summaries_merged])
-    train_summary_dir = os.path.join(out_dir, "summaries", "train")
-    train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
-
-    # Inference summaries
-    inference_summary_op = tf.summary.merge([loss_summary])
-    inference_summary_dir = os.path.join(out_dir, "summaries", "inference")
-    inference_summary_writer = tf.summary.FileWriter(inference_summary_dir, sess.graph)
 
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
     for epoch_i in range(num_epochs):
-
         # 将数据集分成训练集和测试集，随机种子不固定
         train_X, test_X, train_y, test_y = train_test_split(features,
                                                             targets_values,
                                                             test_size=0.2,
                                                             random_state=0)
-
         train_batches = get_batches(train_X, train_y, batch_size)
         test_batches = get_batches(test_X, test_y, batch_size)
-
         # 训练的迭代，保存训练损失
         for batch_i in range(len(train_X) // batch_size):
             x, y = next(train_batches)
@@ -441,7 +409,6 @@ with tf.Session(graph=train_graph) as sess:
             categories = np.zeros([batch_size, 18])
             for i in range(batch_size):
                 categories[i] = x.take(6, 1)[i]
-
             titles = np.zeros([batch_size, sentences_size])
             for i in range(batch_size):
                 titles[i] = x.take(5, 1)[i]
@@ -458,9 +425,8 @@ with tf.Session(graph=train_graph) as sess:
                 dropout_keep_prob: dropout_keep,  # dropout_keep
                 lr: learning_rate}
 
-            step, train_loss, summaries, _ = sess.run([global_step, loss, train_summary_op, train_op], feed)  # cost
+            step, train_loss, _ = sess.run([global_step, loss, train_op], feed)  # cost
             losses['train'].append(train_loss)
-            train_summary_writer.add_summary(summaries, step)  #
 
             # Show every <show_every_n_batches> batches
             if (epoch_i * (len(train_X) // batch_size) + batch_i) % show_every_n_batches == 0:
@@ -496,11 +462,10 @@ with tf.Session(graph=train_graph) as sess:
                 dropout_keep_prob: 1,
                 lr: learning_rate}
 
-            step, test_loss, summaries = sess.run([global_step, loss, inference_summary_op], feed)  # cost
+            step, test_loss = sess.run([global_step, loss], feed)  # cost
 
             # 保存测试损失
             losses['test'].append(test_loss)
-            inference_summary_writer.add_summary(summaries, step)  #
 
             time_str = datetime.datetime.now().isoformat()
             if (epoch_i * (len(test_X) // batch_size) + batch_i) % show_every_n_batches == 0:
@@ -517,13 +482,6 @@ with tf.Session(graph=train_graph) as sess:
 
 save_params(save_dir)
 load_dir = load_params()
-
-
-# plt.plot(losses['train'], label='Training loss')
-# plt.show()
-#
-# plt.plot(losses['test'], label='Test loss')
-# plt.show()
 
 
 def get_tensors(loaded_graph):
