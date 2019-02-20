@@ -27,7 +27,7 @@ def load_data():
     """
     # 读取User数据
     users_title = ["UserID", "Gender", "Age", "JobID", "Zip-code"]
-    users = pd.read_csv("./users.dat", sep="::", header=None, names=users_title, engine="python")
+    users = pd.read_csv(r"./users.dat", sep="::", header=None, names=users_title, engine="python")
     users = users.filter(regex="UserID|Gender|Age|JobID")
     users_orig = users.values
 
@@ -39,7 +39,7 @@ def load_data():
 
     # 读取Movie数据集
     movies_title = ["MovieID", "Title", "Genres"]
-    movies = pd.read_csv("./movies.dat", sep="::", header=None, names=movies_title, engine="python")
+    movies = pd.read_csv(r"./movies.dat", sep="::", header=None, names=movies_title, engine="python")
     movies_orig = movies.values
 
     # 将Title中的年份去掉
@@ -79,12 +79,12 @@ def load_data():
         for cnt in range(title_count - len(title_map[key])):
             title_map[key].insert(len(title_map[key]) + cnt, title2int.get("<PAD>"))
 
-    movies['Title'] = movies['Title'].map(title_map)
+    movies["Title"] = movies["Title"].map(title_map)
 
     # 读取评分数据集
-    ratings_title = ['UserID', 'MovieID', 'ratings', 'timestamps']
-    ratings = pd.read_csv('./ratings.dat', sep='::', header=None, names=ratings_title, engine='python')
-    ratings = ratings.filter(regex='UserID|MovieID|ratings')
+    ratings_title = {"UserID", "MovieID", "ratings", "timestamps"}
+    ratings = pd.read_csv(r"./ratings.dat", sep='::', header=None, names=ratings_title, engine="python")
+    ratings = ratings.filter(regex="UserID|MovieID|ratings")
 
     # 合并三个表
     data = pd.merge(pd.merge(ratings, users), movies)
@@ -101,7 +101,7 @@ def load_data():
 """加载数据并保存到本地"""
 title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig, users_orig = load_data()
 pickle.dump((title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig,
-             users_orig), open('preprocessors.p', 'wb'))
+             users_orig), open("preprocessors.p", "wb"))
 
 """从本地读取数据"""
 title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig, users_orig = pickle.load(
