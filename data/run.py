@@ -9,3 +9,5 @@
 @time:2019-02-20 16:58:49
 """
 print("hello word")
+for i in range(100):
+    print(i)
